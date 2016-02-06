@@ -10,10 +10,22 @@ def make_actual_tree():
     return tree
 
 def make_actual_tree_helper(node, split_prob=.5):
-    if np.random.rand() > split_prob:
-        return
     is_vertical = np.random.randint(0, 2)
     gt_label = np.random.randint(0, 2) == 1
+
+    if is_vertical:
+        r = node.x_bounds[1] - node.x_bounds[0]
+    else:
+        r = node.y_bounds[1] - node.y_bounds[0]
+    if r > 250:
+        split_prob = 1
+    elif r > 100:
+        split_prob = .4
+    elif r < 5:
+        split_prob = 0
+
+    if np.random.rand() > split_prob:
+        return
     if is_vertical:
         x = np.random.randint(node.x_bounds[0], node.x_bounds[1])
         y = None
@@ -184,7 +196,7 @@ for i in range(n_points):
 I_display = np.copy(I)
 
 while True:
-    key = cv2.waitKey(10)
+    key = cv2.waitKey(30)
     if key == ord('q'):
         break
     if key == ord(' '):
@@ -196,5 +208,6 @@ while True:
     cv2.imshow('true', I_display_true)
     I_guess = np.ones((canvas_dim, canvas_dim, 3))
     decision_tree.draw(I_guess)
-    blend = cv2.addWeighted(I_display_true, 0.5, I_guess, 0.5, 0)
-    cv2.imshow('comparison', blend)
+    blend = I_display_true * I_guess
+    blend_two_channel = blend.max(axis=2)
+    cv2.imshow('comparison', blend_two_channel)
