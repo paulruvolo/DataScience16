@@ -47,8 +47,8 @@ class DecisionTree(object):
     def __str__(self):
         return str(self.decision_node)
 
-    def draw(self, im):
-        self.decision_node.draw(im)
+    def draw(self, im, thickness=1):
+        self.decision_node.draw(im, thickness)
 
 class DecisionNode(object):
     def __init__(self):
@@ -97,28 +97,23 @@ class DecisionNode(object):
             self.true_node.y_bounds[0] = y
             self.false_node.y_bounds[1] = y
 
-    def draw(self, im):
+    def draw(self, im, thickness=1):
         if self.label != None:
-            if self.label:
-                cv2.rectangle(im,
-                              (self.x_bounds[0], self.y_bounds[0]),
-                              (self.x_bounds[1], self.y_bounds[1]),
-                              (1,0,0),
-                              thickness=-1)                
-            else:
-                cv2.rectangle(im,
-                              (self.x_bounds[0], self.y_bounds[0]),
-                              (self.x_bounds[1], self.y_bounds[1]),
-                              (0,0,1),
-                              thickness=-1)
+            color_map = {True:(1,0,0), False:(0,0,1)}
             cv2.rectangle(im,
-              (self.x_bounds[0], self.y_bounds[0]),
-              (self.x_bounds[1], self.y_bounds[1]),
-              (0,0,0),
-              thickness=1)  
+                          (self.x_bounds[0], self.y_bounds[0]),
+                          (self.x_bounds[1], self.y_bounds[1]),
+                          color_map[self.label],
+                          thickness=-1)                
+            if thickness > 0:
+                cv2.rectangle(im,
+                              (self.x_bounds[0], self.y_bounds[0]),
+                              (self.x_bounds[1], self.y_bounds[1]),
+                              (0,0,0),
+                              thickness=thickness)  
         else:
-            self.true_node.draw(im)
-            self.false_node.draw(im)
+            self.true_node.draw(im, thickness)
+            self.false_node.draw(im, thickness)
 
     def __str__(self):
         return_value = ""
@@ -143,7 +138,6 @@ def draw_line(event,x,y,flags,param):
 
 
     I_display = np.copy(I)
-    decision_tree.draw(I_display)
     if is_vertical:
         cv2.line(I_display, (x,0), (x, I_display.shape[0]), (0))
     else:
@@ -155,13 +149,13 @@ def draw_line(event,x,y,flags,param):
     if event == cv2.EVENT_LBUTTONDBLCLK:
         _, decision_node = decision_tree.evaluate(x, y)
         decision_node.set_formula(x, y, is_vertical, gt_label)
-        decision_tree.draw(I_display)
+        decision_tree.draw(I_display, thickness=1)
         print decision_tree
     else:
         decision_tree_copy = deepcopy(decision_tree)
         _, decision_node = decision_tree_copy.evaluate(x, y)
         decision_node.set_formula(x, y, is_vertical, gt_label)
-        decision_tree_copy.draw(I_display)
+        decision_tree_copy.draw(I_display, thickness=1)
     I_display = cv2.addWeighted(I_display, 0.5, I, 0.5, 0)
 
 x_last = 0
@@ -204,10 +198,10 @@ while True:
         draw_line(None, x_last, y_last, None, None)
     cv2.imshow('points', I_display)
     I_display_true = np.copy(I)
-    real_tree.draw(I_display_true)
+    real_tree.draw(I_display_true, thickness=0)
     cv2.imshow('true', I_display_true)
     I_guess = np.ones((canvas_dim, canvas_dim, 3))
-    decision_tree.draw(I_guess)
+    decision_tree.draw(I_guess, thickness=0)
     blend = I_display_true * I_guess
     blend_two_channel = blend.max(axis=2)
     cv2.imshow('comparison', blend_two_channel)
