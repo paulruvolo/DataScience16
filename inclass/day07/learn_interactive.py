@@ -25,6 +25,9 @@
 import cv2
 import numpy as np
 from copy import deepcopy
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.cross_validation import train_test_split
 
 canvas_dim = 500
 n_points = 100
@@ -202,7 +205,7 @@ class DecisionNode(object):
         else:
             return_value += "    "*self.nesting + "if %s:\n" % (self.formula)
             return_value += str(self.true_node)
-            return_value += "    "*self.nesting + "else\n"
+            return_value += "    "*self.nesting + "else:\n"
             return_value += str(self.false_node)
         return return_value
 
@@ -253,14 +256,15 @@ real_tree = make_random_tree()
 
 print real_tree
 
-points = np.random.randint(0, canvas_dim, (n_points, 2))
-labels = []
-for i in range(n_points):
-    label, _ = real_tree.evaluate(points[i,0], points[i,1])
+points_all = np.random.randint(0, canvas_dim, (n_points*100, 2))
+labels_all = np.zeros((points_all.shape[0],),dtype=np.bool_)
+for i in range(len(labels_all)):
+    label, _ = real_tree.evaluate(points_all[i,0], points_all[i,1])
     if np.random.rand() < noise:
         label = not label
-    labels.append(label)
+    labels_all[i] = label
 
+points, points_test, labels, labels_test = train_test_split(points_all, labels_all, train_size=0.1)
 I = np.ones((canvas_dim, canvas_dim, 3))
 for i in range(n_points):
     if labels[i]:
@@ -296,4 +300,16 @@ cv2.imshow('guess', I_guess)
 blend = I_display_true * I_guess
 blend_two_channel = blend.max(axis=2)
 cv2.imshow('comparison', blend_two_channel)
+
+predictions = np.asarray([decision_tree.evaluate(pt[0], pt[1])[0] for pt in points_test])
+print "Your model's accuracy", np.mean(predictions == labels_test)
+
+model = DecisionTreeClassifier()
+model.fit(points, labels)
+print "Sklearn Single Decision Tree accuracy", model.score(points_test, labels_test)
+
+model = RandomForestClassifier()
+model.fit(points, labels)
+print "Sklearn Random Forest accuracy", model.score(points_test, labels_test)
+
 cv2.waitKey()
