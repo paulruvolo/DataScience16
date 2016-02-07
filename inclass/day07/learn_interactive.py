@@ -28,6 +28,8 @@ from copy import deepcopy
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.cross_validation import train_test_split
+from numpy import meshgrid
+import matplotlib.pyplot as plt
 
 canvas_dim = 500
 n_points = 100
@@ -288,18 +290,21 @@ while True:
 # render the true decision tree
 I_display_true = np.ones((canvas_dim, canvas_dim, 3))
 real_tree.draw(I_display_true, thickness=0)
-cv2.imshow('true', I_display_true)
+#cv2.imshow('true', I_display_true)
 
 # render the user's constructed decision tree
 I_guess = np.ones((canvas_dim, canvas_dim, 3))
 decision_tree.draw(I_guess, thickness=0)
-cv2.imshow('guess', I_guess)
+#cv2.imshow('guess', I_guess)
 
 # create a blend of the two that is black when they disagree and
 # white when the two trees agree.
-blend = I_display_true * I_guess
-blend_two_channel = blend.max(axis=2)
-cv2.imshow('comparison', blend_two_channel)
+# blend = I_display_true * I_guess
+# blend_two_channel = blend.max(axis=2)
+# cv2.imshow('comparison', blend_two_channel)
+
+predictions = np.asarray([real_tree.evaluate(pt[0], pt[1])[0] for pt in points_test])
+print "True model's accuracy", np.mean(predictions == labels_test)
 
 predictions = np.asarray([decision_tree.evaluate(pt[0], pt[1])[0] for pt in points_test])
 print "Your model's accuracy", np.mean(predictions == labels_test)
@@ -308,8 +313,44 @@ model = DecisionTreeClassifier()
 model.fit(points, labels)
 print "Sklearn Single Decision Tree accuracy", model.score(points_test, labels_test)
 
+x, y = meshgrid(range(canvas_dim),range(canvas_dim))
+get_decision_func = np.hstack((x.reshape(x.shape[0]*x.shape[1],1), y.reshape(y.shape[0]*y.shape[1],1)))
+
+decision_func_output = model.predict(get_decision_func).astype(dtype=np.float).reshape((canvas_dim, canvas_dim))
+tree_func_color = np.zeros((canvas_dim, canvas_dim, 3))
+tree_func_color[:,:,0] = decision_func_output
+tree_func_color[:,:,2] = 1 - decision_func_output
+#cv2.imshow("Decision Tree Decision", tree_func_color)
+
 model = RandomForestClassifier()
 model.fit(points, labels)
 print "Sklearn Random Forest accuracy", model.score(points_test, labels_test)
 
-cv2.waitKey()
+decision_func_output = model.predict(get_decision_func).astype(dtype=np.float).reshape((canvas_dim, canvas_dim))
+forest_func_color = np.zeros((canvas_dim, canvas_dim, 3))
+forest_func_color[:,:,0] = decision_func_output
+forest_func_color[:,:,2] = 1 - decision_func_output
+#cv2.imshow("Forest Decision", forest_func_color)
+cv2.destroyAllWindows()
+
+plt.subplot(2,2,1)
+plt.title("True Decision Function")
+plt.imshow(np.flipud(cv2.cvtColor(I_display_true.astype(np.uint8)*255, cv2.COLOR_BGR2RGB)), origin="lower")
+plt.axis('off')
+
+plt.subplot(2,2,2)
+plt.title("Your Decision Function")
+plt.imshow(np.flipud(cv2.cvtColor(I_guess.astype(np.uint8)*255, cv2.COLOR_BGR2RGB)), origin="lower")
+plt.axis('off')
+
+plt.subplot(2,2,3)
+plt.title("Sklearn Single Tree Decision Function")
+plt.imshow(np.flipud(cv2.cvtColor(tree_func_color.astype(np.uint8)*255, cv2.COLOR_BGR2RGB)), origin="lower")
+plt.axis('off')
+
+plt.subplot(2,2,4)
+plt.title("Sklearn Forest Decision Function")
+plt.imshow(np.flipud(cv2.cvtColor(forest_func_color.astype(np.uint8)*255, cv2.COLOR_BGR2RGB)), origin="lower")
+plt.axis('off')
+
+plt.show()
