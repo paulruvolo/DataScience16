@@ -334,22 +334,22 @@ forest_func_color[:,:,2] = 1 - decision_func_output
 cv2.destroyAllWindows()
 
 plt.subplot(2,2,1)
-plt.title("True Decision Function")
+plt.title("True Function")
 plt.imshow(np.flipud(cv2.cvtColor(I_display_true.astype(np.uint8)*255, cv2.COLOR_BGR2RGB)), origin="lower")
 plt.axis('off')
 
 plt.subplot(2,2,2)
-plt.title("Your Decision Function")
+plt.title("Your Function")
 plt.imshow(np.flipud(cv2.cvtColor(I_guess.astype(np.uint8)*255, cv2.COLOR_BGR2RGB)), origin="lower")
 plt.axis('off')
 
 plt.subplot(2,2,3)
-plt.title("Sklearn Single Tree Decision Function")
+plt.title("Sklearn Tree Function")
 plt.imshow(np.flipud(cv2.cvtColor(tree_func_color.astype(np.uint8)*255, cv2.COLOR_BGR2RGB)), origin="lower")
 plt.axis('off')
 
 plt.subplot(2,2,4)
-plt.title("Sklearn Forest Decision Function")
+plt.title("Sklearn Forest Function")
 plt.imshow(np.flipud(cv2.cvtColor(forest_func_color.astype(np.uint8)*255, cv2.COLOR_BGR2RGB)), origin="lower")
 plt.axis('off')
 
