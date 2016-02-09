@@ -246,111 +246,112 @@ def draw_line(event,x,y,flags,param):
         decision_tree_copy.draw(I_display, thickness=1)
     I_display = cv2.addWeighted(I_display, 0.5, I, 0.5, 0)
 
-x_last = 0
-y_last = 0
-is_vertical = True
-gt_label = True
+if __name__ == '__main__':
+    x_last = 0
+    y_last = 0
+    is_vertical = True
+    gt_label = True
 
-decision_tree = DecisionTree()
-cv2.namedWindow('guess')
-cv2.setMouseCallback('guess', draw_line)
-real_tree = make_random_tree()
+    decision_tree = DecisionTree()
+    cv2.namedWindow('guess')
+    cv2.setMouseCallback('guess', draw_line)
+    real_tree = make_random_tree()
 
-print real_tree
+    print real_tree
 
-points_all = np.random.randint(0, canvas_dim, (n_points*100, 2))
-labels_all = np.zeros((points_all.shape[0],),dtype=np.bool_)
-for i in range(len(labels_all)):
-    label, _ = real_tree.evaluate(points_all[i,0], points_all[i,1])
-    if np.random.rand() < noise:
-        label = not label
-    labels_all[i] = label
+    points_all = np.random.randint(0, canvas_dim, (n_points*100, 2))
+    labels_all = np.zeros((points_all.shape[0],),dtype=np.bool_)
+    for i in range(len(labels_all)):
+        label, _ = real_tree.evaluate(points_all[i,0], points_all[i,1])
+        if np.random.rand() < noise:
+            label = not label
+        labels_all[i] = label
 
-points, points_test, labels, labels_test = train_test_split(points_all, labels_all, train_size=0.1)
-I = np.ones((canvas_dim, canvas_dim, 3))
-for i in range(n_points):
-    if labels[i]:
-        (x_size, y_size), _ = cv2.getTextSize("+", cv2.FONT_HERSHEY_COMPLEX, 0.5, 2)
-        cv2.putText(I, "+", (points[i,0]-x_size/2, points[i,1]+y_size/2), cv2.FONT_HERSHEY_COMPLEX, 0.5, 0, 2)
-    else:
-        (x_size, y_size), _ = cv2.getTextSize("-", cv2.FONT_HERSHEY_COMPLEX, 0.5, 2)
-        cv2.putText(I, "-", (points[i,0]-x_size/2, points[i,1]+y_size/2), cv2.FONT_HERSHEY_COMPLEX, 0.5, 0, 2)
+    points, points_test, labels, labels_test = train_test_split(points_all, labels_all, train_size=0.01)
+    I = np.ones((canvas_dim, canvas_dim, 3))
+    for i in range(labels.shape[0]):
+        if labels[i]:
+            (x_size, y_size), _ = cv2.getTextSize("+", cv2.FONT_HERSHEY_COMPLEX, 0.5, 2)
+            cv2.putText(I, "+", (points[i,0]-x_size/2, points[i,1]+y_size/2), cv2.FONT_HERSHEY_COMPLEX, 0.5, 0, 2)
+        else:
+            (x_size, y_size), _ = cv2.getTextSize("-", cv2.FONT_HERSHEY_COMPLEX, 0.5, 2)
+            cv2.putText(I, "-", (points[i,0]-x_size/2, points[i,1]+y_size/2), cv2.FONT_HERSHEY_COMPLEX, 0.5, 0, 2)
 
-I_display = np.copy(I)
+    I_display = np.copy(I)
 
-while True:
-    key = cv2.waitKey(30)
-    if key == ord('q'):
-        break
-    if key == ord(' '):
-        is_vertical = not is_vertical
-        draw_line(None, x_last, y_last, None, None)
-    cv2.imshow('guess', I_display)
+    while True:
+        key = cv2.waitKey(30)
+        if key == ord('q'):
+            break
+        if key == ord(' '):
+            is_vertical = not is_vertical
+            draw_line(None, x_last, y_last, None, None)
+        cv2.imshow('guess', I_display)
 
-# render the true decision tree
-I_display_true = np.ones((canvas_dim, canvas_dim, 3))
-real_tree.draw(I_display_true, thickness=0)
-#cv2.imshow('true', I_display_true)
+    # render the true decision tree
+    I_display_true = np.ones((canvas_dim, canvas_dim, 3))
+    real_tree.draw(I_display_true, thickness=0)
+    #cv2.imshow('true', I_display_true)
 
-# render the user's constructed decision tree
-I_guess = np.ones((canvas_dim, canvas_dim, 3))
-decision_tree.draw(I_guess, thickness=0)
-#cv2.imshow('guess', I_guess)
+    # render the user's constructed decision tree
+    I_guess = np.ones((canvas_dim, canvas_dim, 3))
+    decision_tree.draw(I_guess, thickness=0)
+    #cv2.imshow('guess', I_guess)
 
-# create a blend of the two that is black when they disagree and
-# white when the two trees agree.
-# blend = I_display_true * I_guess
-# blend_two_channel = blend.max(axis=2)
-# cv2.imshow('comparison', blend_two_channel)
+    # create a blend of the two that is black when they disagree and
+    # white when the two trees agree.
+    # blend = I_display_true * I_guess
+    # blend_two_channel = blend.max(axis=2)
+    # cv2.imshow('comparison', blend_two_channel)
 
-predictions = np.asarray([real_tree.evaluate(pt[0], pt[1])[0] for pt in points_test])
-print "True model's accuracy", np.mean(predictions == labels_test)
+    predictions = np.asarray([real_tree.evaluate(pt[0], pt[1])[0] for pt in points_test])
+    print "True model's accuracy", np.mean(predictions == labels_test)
 
-predictions = np.asarray([decision_tree.evaluate(pt[0], pt[1])[0] for pt in points_test])
-print "Your model's accuracy", np.mean(predictions == labels_test)
+    predictions = np.asarray([decision_tree.evaluate(pt[0], pt[1])[0] for pt in points_test])
+    print "Your model's accuracy", np.mean(predictions == labels_test)
 
-model = DecisionTreeClassifier()
-model.fit(points, labels)
-print "Sklearn Single Decision Tree accuracy", model.score(points_test, labels_test)
+    model = DecisionTreeClassifier()
+    model.fit(points, labels)
+    print "Sklearn Single Decision Tree accuracy", model.score(points_test, labels_test)
 
-x, y = meshgrid(range(canvas_dim),range(canvas_dim))
-get_decision_func = np.hstack((x.reshape(x.shape[0]*x.shape[1],1), y.reshape(y.shape[0]*y.shape[1],1)))
+    x, y = meshgrid(range(canvas_dim),range(canvas_dim))
+    get_decision_func = np.hstack((x.reshape(x.shape[0]*x.shape[1],1), y.reshape(y.shape[0]*y.shape[1],1)))
 
-decision_func_output = model.predict(get_decision_func).astype(dtype=np.float).reshape((canvas_dim, canvas_dim))
-tree_func_color = np.zeros((canvas_dim, canvas_dim, 3))
-tree_func_color[:,:,0] = decision_func_output
-tree_func_color[:,:,2] = 1 - decision_func_output
-#cv2.imshow("Decision Tree Decision", tree_func_color)
+    decision_func_output = model.predict(get_decision_func).astype(dtype=np.float).reshape((canvas_dim, canvas_dim))
+    tree_func_color = np.zeros((canvas_dim, canvas_dim, 3))
+    tree_func_color[:,:,0] = decision_func_output
+    tree_func_color[:,:,2] = 1 - decision_func_output
+    #cv2.imshow("Decision Tree Decision", tree_func_color)
 
-model = RandomForestClassifier()
-model.fit(points, labels)
-print "Sklearn Random Forest accuracy", model.score(points_test, labels_test)
+    model = RandomForestClassifier()
+    model.fit(points, labels)
+    print "Sklearn Random Forest accuracy", model.score(points_test, labels_test)
 
-decision_func_output = model.predict(get_decision_func).astype(dtype=np.float).reshape((canvas_dim, canvas_dim))
-forest_func_color = np.zeros((canvas_dim, canvas_dim, 3))
-forest_func_color[:,:,0] = decision_func_output
-forest_func_color[:,:,2] = 1 - decision_func_output
-#cv2.imshow("Forest Decision", forest_func_color)
-cv2.destroyAllWindows()
+    decision_func_output = model.predict(get_decision_func).astype(dtype=np.float).reshape((canvas_dim, canvas_dim))
+    forest_func_color = np.zeros((canvas_dim, canvas_dim, 3))
+    forest_func_color[:,:,0] = decision_func_output
+    forest_func_color[:,:,2] = 1 - decision_func_output
+    #cv2.imshow("Forest Decision", forest_func_color)
+    cv2.destroyAllWindows()
 
-plt.subplot(2,2,1)
-plt.title("True Function")
-plt.imshow(np.flipud(cv2.cvtColor(I_display_true.astype(np.uint8)*255, cv2.COLOR_BGR2RGB)), origin="lower")
-plt.axis('off')
+    plt.subplot(2,2,1)
+    plt.title("True Function")
+    plt.imshow(np.flipud(cv2.cvtColor(I_display_true.astype(np.uint8)*255, cv2.COLOR_BGR2RGB)), origin="lower")
+    plt.axis('off')
 
-plt.subplot(2,2,2)
-plt.title("Your Function")
-plt.imshow(np.flipud(cv2.cvtColor(I_guess.astype(np.uint8)*255, cv2.COLOR_BGR2RGB)), origin="lower")
-plt.axis('off')
+    plt.subplot(2,2,2)
+    plt.title("Your Function")
+    plt.imshow(np.flipud(cv2.cvtColor(I_guess.astype(np.uint8)*255, cv2.COLOR_BGR2RGB)), origin="lower")
+    plt.axis('off')
 
-plt.subplot(2,2,3)
-plt.title("Sklearn Tree Function")
-plt.imshow(np.flipud(cv2.cvtColor(tree_func_color.astype(np.uint8)*255, cv2.COLOR_BGR2RGB)), origin="lower")
-plt.axis('off')
+    plt.subplot(2,2,3)
+    plt.title("Sklearn Tree Function")
+    plt.imshow(np.flipud(cv2.cvtColor(tree_func_color.astype(np.uint8)*255, cv2.COLOR_BGR2RGB)), origin="lower")
+    plt.axis('off')
 
-plt.subplot(2,2,4)
-plt.title("Sklearn Forest Function")
-plt.imshow(np.flipud(cv2.cvtColor(forest_func_color.astype(np.uint8)*255, cv2.COLOR_BGR2RGB)), origin="lower")
-plt.axis('off')
+    plt.subplot(2,2,4)
+    plt.title("Sklearn Forest Function")
+    plt.imshow(np.flipud(cv2.cvtColor(forest_func_color.astype(np.uint8)*255, cv2.COLOR_BGR2RGB)), origin="lower")
+    plt.axis('off')
 
-plt.show()
+    plt.show()
