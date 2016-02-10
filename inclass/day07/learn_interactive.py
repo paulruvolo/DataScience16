@@ -4,14 +4,14 @@
 
     Once the application has been started, you will see a window containing
     some labeled training data (+ for positive, - for negative).  You can
-    then create a decision tree to classify this data by double clicking
-    in the window.  By double clicking you will create a split on either the
+    then create a decision tree to classify this data typing the 'a' key when
+    your focus is in the window.  By typing 'a' you will create a split on either the
     x or y value.  You can tell which one the split will use by the orientation
     of the line that will preview the split you are about to create.  Use the
-    spacebar to toggle the split direction.
+    'v' key to toggle the split direction.
 
     Which label to classify the points on either side of the new split can be
-    changed by right clicking in the window.
+    changed by typing the 's' key.
 
     Once you are satisfied with your tree, tap 'q' to see how your decision
     tree compares to the tree decision function.
@@ -212,18 +212,20 @@ class DecisionNode(object):
         return return_value
 
 
+def process_mouse(event,x,y,flags,param):
+    global x_last
+    global y_last
+
+    x_last = x
+    y_last = y
+
+
 def draw_line(event,x,y,flags,param):
     """ Process mouse events so we can get a preview of the split
         that would be added if user double clicks.  This also will
         create a split when the user double clicks. """
     global I_display
     global decision_tree
-    global gt_label
-    global x_last
-    global y_last
-    x_last = x
-    y_last = y
-
 
     I_display = np.copy(I)
     if is_vertical:
@@ -231,12 +233,7 @@ def draw_line(event,x,y,flags,param):
     else:
         cv2.line(I_display, (0,y), (I_display.shape[1], y), (0))
 
-    if event == cv2.EVENT_RBUTTONDOWN:
-        gt_label = not gt_label
-
     if event == cv2.EVENT_LBUTTONDBLCLK:
-        _, decision_node = decision_tree.evaluate(x, y)
-        decision_node.set_formula(x, y, is_vertical, gt_label)
         decision_tree.draw(I_display, thickness=1)
         print decision_tree
     else:
@@ -252,9 +249,17 @@ if __name__ == '__main__':
     is_vertical = True
     gt_label = True
 
+    instructions = np.ones((200, 400))
+    cv2.putText(instructions, "'a': add new split", (10, 20), cv2.FONT_HERSHEY_COMPLEX, 0.5, 0, 1)
+    cv2.putText(instructions, "'v': toggle vertical / horizontal", (10, 50), cv2.FONT_HERSHEY_COMPLEX, 0.5, 0, 1)
+    cv2.putText(instructions, "'s': switch label assigned to each subset", (10, 80), cv2.FONT_HERSHEY_COMPLEX, 0.5, 0, 1)
+    cv2.putText(instructions, "'q': quit", (10, 110), cv2.FONT_HERSHEY_COMPLEX, 0.5, 0, 1)
+
+    cv2.imshow("instructions", instructions)
+
     decision_tree = DecisionTree()
     cv2.namedWindow('guess')
-    cv2.setMouseCallback('guess', draw_line)
+    cv2.setMouseCallback('guess', process_mouse)
     real_tree = make_random_tree()
 
     print real_tree
@@ -281,11 +286,16 @@ if __name__ == '__main__':
 
     while True:
         key = cv2.waitKey(30)
-        if key == ord('q'):
+        if key & 0XFF == ord('q'):
             break
-        if key == ord(' '):
+        elif key & 0xFF == ord('a'):
+            _, decision_node = decision_tree.evaluate(x_last, y_last)
+            decision_node.set_formula(x_last, y_last, is_vertical, gt_label)
+        elif key & 0XFF == ord('v'):
             is_vertical = not is_vertical
-            draw_line(None, x_last, y_last, None, None)
+        elif key & 0XFF == ord('s'):
+            gt_label = not gt_label
+        draw_line(None, x_last, y_last, None, None)
         cv2.imshow('guess', I_display)
 
     # render the true decision tree
